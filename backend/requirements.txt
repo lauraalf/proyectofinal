@@ -4,3 +4,8 @@ python-dotenv==1.0.0
 supabase==1.2.0
 PyJWT==2.8.0
 Werkzeug==2.3.7
+<<<<<<< HEAD
+gunicorn==21.2.0
+=======
+gunicorn==21.2.0
+>>>>>>> e2c4958f2ff707f9494555ae3e230e1f6791eac7
