@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 CORS(app, origins=[
     "http://localhost:3000",
-    "https://proyectofinal-lauraalf.vercel.app"
+    "https://proyectofinal-sooty.vercel.app"
 ])
 
 SECRET_KEY = "secret"
