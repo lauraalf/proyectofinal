@@ -1,418 +1,252 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
-const Dashboard = () => {
-  const [solicitudes, setSolicitudes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [nuevaSolicitud, setNuevaSolicitud] = useState({
-    tipo: 'vacaciones',
-    fecha_inicio: '',
-    fecha_fin: '',
-    descripcion: ''
+const Registro = () => {
+  const [formData, setFormData] = useState({
+    nombre: '',
+    apellido: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    telefono: '',
+    puesto: ''
   });
-  const [showForm, setShowForm] = useState(false);
-  const [mensaje, setMensaje] = useState('');
-  const [mensajeTipo, setMensajeTipo] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-  const isAdmin = usuario.rol === 'admin';
 
-  const cargarSolicitudes = useCallback(async () => {
-    try {
-      const response = await fetch('https://proyectofinal-jjla.onrender.com/solicitudes', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('usuario');
-          navigate('/login');
-          return;
-        }
-        throw new Error('Error al cargar solicitudes');
-      }
-
-      const data = await response.json();
-      setSolicitudes(data);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, navigate]);
-
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    cargarSolicitudes();
-  }, [token, navigate, cargarSolicitudes]);
-
-  const crearSolicitud = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMensaje('');
-    
-    const hoy = new Date().toISOString().split('T')[0];
-    if (nuevaSolicitud.fecha_inicio < hoy) {
-      setMensaje('La fecha de inicio no puede ser en el pasado');
-      setMensajeTipo('error');
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      setLoading(false);
       return;
     }
 
-    const solicitudData = {
-      tipo: nuevaSolicitud.tipo,
-      fecha_inicio: nuevaSolicitud.fecha_inicio,
-      fecha_fin: nuevaSolicitud.fecha_fin,
-      descripcion: nuevaSolicitud.descripcion
-    };
+    if (formData.password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch('https://proyectofinal-jjla.onrender.com/solicitudes', {
+      const response = await fetch('https://proyectofinal-jj1a.onrender.com/registro', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(solicitudData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensaje(data.message || 'Solicitud creada exitosamente');
-        setMensajeTipo('success');
-        setNuevaSolicitud({
-          tipo: 'vacaciones',
-          fecha_inicio: '',
-          fecha_fin: '',
-          descripcion: ''
-        });
-        setShowForm(false);
-        cargarSolicitudes();
-      } else {
-        setMensaje(data.message || 'Error al crear solicitud');
-        setMensajeTipo('error');
-      }
-    } catch (error) {
-      setMensaje('Error de conexion al servidor');
-      setMensajeTipo('error');
-      console.error('Error:', error);
-    }
-  };
-
-  const actualizarEstado = async (id, estado) => {
-    try {
-      const response = await fetch(`https://proyectofinal-jjla.onrender.com/solicitudes/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ estado })
+        body: JSON.stringify({
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          email: formData.email,
+          password: formData.password,
+          telefono: formData.telefono,
+          puesto: formData.puesto || 'Empleado'
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setMensaje(data.message || 'Error al actualizar solicitud');
-        setMensajeTipo('error');
+        setError(data.message || 'Error al registrarse');
+        setLoading(false);
         return;
       }
 
-      setMensaje('Solicitud actualizada exitosamente');
-      setMensajeTipo('success');
-      cargarSolicitudes();
-    } catch (error) {
-      setMensaje('Error de conexion al servidor');
-      setMensajeTipo('error');
-      console.error('Error:', error);
+      setSuccess('Usuario registrado exitosamente. Redirigiendo al login...');
+      
+      setFormData({
+        nombre: '',
+        apellido: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        telefono: '',
+        puesto: ''
+      });
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+
+    } catch (err) {
+      setError('Error de conexión al servidor');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    navigate('/login');
-  };
-
-  const getEstadoBadge = (estado) => {
-    const clases = {
-      'pendiente': 'bg-warning text-dark',
-      'aprobada': 'bg-success',
-      'rechazada': 'bg-danger'
-    };
-    return `badge ${clases[estado] || 'bg-secondary'}`;
-  };
-
-  const getPrioridadLabel = (prioridad) => {
-    if (prioridad === 1) return '1 prioridad';
-    if (prioridad === 2) return '2 prioridad';
-    if (prioridad >= 3) return `${prioridad} prioridad`;
-    return 'Sin prioridad';
-  };
-
-  const formatFecha = (fecha) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatHora = (fecha) => {
-    return new Date(fecha).toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="container mt-5 text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Cargando...</span>
-        </div>
-        <p className="mt-2 text-muted">Cargando solicitudes...</p>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
-      <nav className="navbar navbar-expand-lg navbar-dark" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <div className="container-fluid px-4">
-          <span className="navbar-brand fw-bold">
-            Sistema RRHH
-          </span>
-          <div className="d-flex align-items-center">
-            <span className="text-white me-3">
-              <span className="fw-bold">{usuario.nombre} {usuario.apellido}</span>
-              <span className="badge bg-light text-dark ms-2">{usuario.rol}</span>
-            </span>
-            <button className="btn btn-outline-light btn-sm" onClick={handleLogout}>
-              Cerrar Sesion
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <div className="container-fluid px-4 py-4">
-        {mensaje && (
-          <div className={`alert alert-${mensajeTipo === 'success' ? 'success' : 'danger'} alert-dismissible fade show`} role="alert">
-            {mensaje}
-            <button type="button" className="btn-close" onClick={() => setMensaje('')}></button>
-          </div>
-        )}
-
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h2 className="fw-bold mb-0" style={{ color: '#2d3748' }}>
-              {isAdmin ? 'Panel de Administracion' : 'Mis Solicitudes'}
-            </h2>
-            <p className="text-muted small">
-              {isAdmin ? 'Gestiona todas las solicitudes de los empleados' : 'Crea y da seguimiento a tus solicitudes'}
-            </p>
-          </div>
-          {!isAdmin && (
-            <button 
-              className="btn btn-primary btn-lg rounded-3"
-              onClick={() => setShowForm(!showForm)}
-              style={{ 
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                border: 'none'
-              }}
-            >
-              {showForm ? 'Cancelar' : 'Nueva Solicitud'}
-            </button>
-          )}
-        </div>
-
-        {!isAdmin && showForm && (
-          <div className="card shadow-sm border-0 rounded-4 mb-4">
-            <div className="card-body p-4">
-              <h5 className="fw-bold mb-3">Nueva Solicitud</h5>
-              <form onSubmit={crearSolicitud}>
+    <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center" 
+         style={{ 
+           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+         }}>
+      <div className="row justify-content-center w-100">
+        <div className="col-md-6 col-lg-5">
+          <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
+            <div className="card-header bg-white border-0 text-center py-4">
+              <div className="mb-2">
+                <span className="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fs-6">
+                  Nuevo Usuario
+                </span>
+              </div>
+              <h3 className="fw-bold mb-1" style={{ color: '#2d3748' }}>
+                Crear Cuenta
+              </h3>
+              <p className="text-muted small mb-0">Registrate para acceder al sistema</p>
+            </div>
+            <div className="card-body px-4 pb-4">
+              {error && (
+                <div className="alert alert-danger d-flex align-items-center" role="alert">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="alert alert-success d-flex align-items-center" role="alert">
+                  {success}
+                </div>
+              )}
+              <form onSubmit={handleSubmit}>
                 <div className="row g-3">
-                  <div className="col-md-3">
-                    <label className="form-label fw-semibold small">Tipo</label>
-                    <select
-                      className="form-select"
-                      value={nuevaSolicitud.tipo}
-                      onChange={(e) => setNuevaSolicitud({...nuevaSolicitud, tipo: e.target.value})}
-                      required
-                    >
-                      <option value="vacaciones">Vacaciones</option>
-                      <option value="ausencia">Ausencia</option>
-                      <option value="permiso">Permiso</option>
-                    </select>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-semibold small">Fecha Inicio</label>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold small text-uppercase text-muted">Nombre</label>
                     <input
-                      type="date"
-                      className="form-control"
-                      value={nuevaSolicitud.fecha_inicio}
-                      onChange={(e) => setNuevaSolicitud({...nuevaSolicitud, fecha_inicio: e.target.value})}
-                      min={new Date().toISOString().split('T')[0]}
+                      type="text"
+                      name="nombre"
+                      className="form-control form-control-lg rounded-3"
+                      value={formData.nombre}
+                      onChange={handleChange}
+                      placeholder="Nombre"
                       required
+                      style={{ backgroundColor: '#f7fafc', border: '1px solid #e2e8f0' }}
                     />
                   </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-semibold small">Fecha Fin</label>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold small text-uppercase text-muted">Apellido</label>
                     <input
-                      type="date"
-                      className="form-control"
-                      value={nuevaSolicitud.fecha_fin}
-                      onChange={(e) => setNuevaSolicitud({...nuevaSolicitud, fecha_fin: e.target.value})}
-                      min={nuevaSolicitud.fecha_inicio || new Date().toISOString().split('T')[0]}
+                      type="text"
+                      name="apellido"
+                      className="form-control form-control-lg rounded-3"
+                      value={formData.apellido}
+                      onChange={handleChange}
+                      placeholder="Apellido"
                       required
-                    />
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label fw-semibold small">Descripcion</label>
-                    <textarea
-                      className="form-control"
-                      value={nuevaSolicitud.descripcion}
-                      onChange={(e) => setNuevaSolicitud({...nuevaSolicitud, descripcion: e.target.value})}
-                      rows="1"
-                      placeholder="Motivo de la solicitud..."
+                      style={{ backgroundColor: '#f7fafc', border: '1px solid #e2e8f0' }}
                     />
                   </div>
                 </div>
-                <div className="mt-3 d-flex gap-2">
-                  <button type="submit" className="btn btn-primary px-4">
-                    Enviar Solicitud
-                  </button>
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowForm(false)}>
-                    Cancelar
-                  </button>
+
+                <div className="mt-3">
+                  <label className="form-label fw-semibold small text-uppercase text-muted">Correo Electronico</label>
+                  <input
+                    type="email"
+                    name="email"
+                    className="form-control form-control-lg rounded-3"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="nombre@empresa.com"
+                    required
+                    style={{ backgroundColor: '#f7fafc', border: '1px solid #e2e8f0' }}
+                  />
                 </div>
-                <small className="text-muted mt-2 d-block">
-                  Cupos por tipo: Vacaciones (2 personas), Ausencia (sin limite), Permiso (3 personas).
-                </small>
+
+                <div className="row g-3 mt-1">
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold small text-uppercase text-muted">Contraseña</label>
+                    <input
+                      type="password"
+                      name="password"
+                      className="form-control form-control-lg rounded-3"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Minimo 6 caracteres"
+                      required
+                      style={{ backgroundColor: '#f7fafc', border: '1px solid #e2e8f0' }}
+                    />
+                    <small className="text-muted">Minimo 6 caracteres</small>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold small text-uppercase text-muted">Confirmar</label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      className="form-control form-control-lg rounded-3"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Repite tu contraseña"
+                      required
+                      style={{ backgroundColor: '#f7fafc', border: '1px solid #e2e8f0' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="row g-3 mt-1">
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold small text-uppercase text-muted">Telefono</label>
+                    <input
+                      type="tel"
+                      name="telefono"
+                      className="form-control form-control-lg rounded-3"
+                      value={formData.telefono}
+                      onChange={handleChange}
+                      placeholder="809-555-0000"
+                      style={{ backgroundColor: '#f7fafc', border: '1px solid #e2e8f0' }}
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold small text-uppercase text-muted">Puesto</label>
+                    <input
+                      type="text"
+                      name="puesto"
+                      className="form-control form-control-lg rounded-3"
+                      value={formData.puesto}
+                      onChange={handleChange}
+                      placeholder="Tu cargo"
+                      style={{ backgroundColor: '#f7fafc', border: '1px solid #e2e8f0' }}
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary btn-lg w-100 mt-4 py-2 fw-bold rounded-3"
+                  disabled={loading}
+                  style={{ 
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    border: 'none'
+                  }}
+                >
+                  {loading ? 'Registrando...' : 'Registrarse'}
+                </button>
               </form>
+
+              <div className="text-center mt-4 pt-3 border-top">
+                <p className="mb-0 text-muted small">
+                  ¿Ya tienes cuenta? 
+                  <Link to="/login" className="fw-bold text-decoration-none" style={{ color: '#667eea' }}>
+                    Iniciar Sesion
+                  </Link>
+                </p>
+              </div>
             </div>
           </div>
-        )}
-
-        <div className="card shadow-sm border-0 rounded-4">
-          <div className="card-header bg-white border-0 pt-4 px-4">
-            <h5 className="fw-bold mb-0">Lista de Solicitudes</h5>
-          </div>
-          <div className="card-body p-4">
-            {solicitudes.length === 0 ? (
-              <div className="text-center py-5">
-                <div style={{ fontSize: '48px' }}></div>
-                <p className="text-muted mt-2">No hay solicitudes registradas</p>
-              </div>
-            ) : (
-              <div className="table-responsive">
-                <table className="table table-hover align-middle">
-                  <thead style={{ backgroundColor: '#f7fafc' }}>
-                    <tr>
-                      {isAdmin && <th>Empleado</th>}
-                      <th>Tipo</th>
-                      <th>Fechas</th>
-                      <th>Descripcion</th>
-                      <th>Solicitado</th>
-                      <th>Prioridad</th>
-                      <th>Estado</th>
-                      {isAdmin && <th>Acciones</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {solicitudes.map((solicitud) => (
-                      <tr key={solicitud.id}>
-                        {isAdmin && (
-                          <td>
-                            <div className="fw-semibold">
-                              {solicitud.empleados?.nombre} {solicitud.empleados?.apellido}
-                            </div>
-                          </td>
-                        )}
-                        <td>
-                          <span className="badge bg-light text-dark">
-                            {solicitud.tipo}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="small">
-                            {formatFecha(solicitud.fecha_inicio)}
-                            <br />
-                            <span className="text-muted">→ {formatFecha(solicitud.fecha_fin)}</span>
-                          </div>
-                        </td>
-                        <td>{solicitud.descripcion || '-'}</td>
-                        <td>
-                          <div className="small">
-                            {formatFecha(solicitud.fecha_solicitud || solicitud.created_at)}
-                            <br />
-                            <span className="text-muted">
-                              {formatHora(solicitud.fecha_solicitud || solicitud.created_at)}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="badge bg-info text-dark">
-                            {getPrioridadLabel(solicitud.prioridad || 0)}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={getEstadoBadge(solicitud.estado)}>
-                            {solicitud.estado === 'pendiente' ? 'Pendiente' :
-                             solicitud.estado === 'aprobada' ? 'Aprobada' : 'Rechazada'}
-                          </span>
-                          {solicitud.estado === 'rechazada' && solicitud.prioridad >= 3 && (
-                            <div className="small text-danger">
-                              Sin cupo disponible
-                            </div>
-                          )}
-                        </td>
-                        {isAdmin && (
-                          <td>
-                            {solicitud.estado === 'pendiente' && (
-                              <div className="d-flex gap-1">
-                                <button 
-                                  className="btn btn-success btn-sm"
-                                  onClick={() => actualizarEstado(solicitud.id, 'aprobada')}
-                                >
-                                  Aprobar
-                                </button>
-                                <button 
-                                  className="btn btn-danger btn-sm"
-                                  onClick={() => actualizarEstado(solicitud.id, 'rechazada')}
-                                >
-                                  Rechazar
-                                </button>
-                              </div>
-                            )}
-                            {solicitud.estado !== 'pendiente' && (
-                              <span className="text-muted small">Procesada</span>
-                            )}
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 text-center">
-          <p className="text-muted small">
-            © 2026 – Sistema de Recursos Humanos – Proyecto UNIBE
-          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default Registro;
