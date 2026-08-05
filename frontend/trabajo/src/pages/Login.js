@@ -12,7 +12,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await fetch('http://127.0.0.1:5001/login', {
+      const response = await fetch('https://proyectofinal-jjla.onrender.com/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ const Login = () => {
                 <p className="mb-0 text-muted small">
                   ¿No tienes cuenta? 
                   <Link to="/registro" className="fw-bold text-decoration-none" style={{ color: '#667eea' }}>
-                     Registrate aqui
+                    Registrate aqui
                   </Link>
                 </p>
               </div>
