@@ -3,9 +3,21 @@ import Login from './pages/Login';
 import Registro from './pages/Registro';
 import Dashboard from './pages/Dashboard';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { useState, useEffect } from 'react';
 
 function App() {
-  const token = localStorage.getItem('token');
+  const [token, setToken] = useState(localStorage.getItem('token'));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newToken = localStorage.getItem('token');
+      if (newToken !== token) {
+        setToken(newToken);
+      }
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, [token]);
 
   return (
     <Router>

@@ -30,7 +30,9 @@ const Login = () => {
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
 
-      window.location.href = '/dashboard';
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 100);
     } catch (err) {
       setError('Error de conexión al servidor');
       console.error(err);
