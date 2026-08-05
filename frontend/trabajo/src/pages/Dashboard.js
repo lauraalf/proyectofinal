@@ -20,7 +20,7 @@ const Dashboard = () => {
 
   const cargarSolicitudes = useCallback(async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5001/solicitudes', {
+      const response = await fetch('https://proyectofinal-jj1a.onrender.com/solicitudes', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -72,7 +72,7 @@ const Dashboard = () => {
     };
 
     try {
-      const response = await fetch('http://127.0.0.1:5001/solicitudes', {
+      const response = await fetch('https://proyectofinal-jj1a.onrender.com/solicitudes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ const Dashboard = () => {
 
   const actualizarEstado = async (id, estado) => {
     try {
-      const response = await fetch(`http://127.0.0.1:5001/solicitudes/${id}`, {
+      const response = await fetch(`https://proyectofinal-jj1a.onrender.com/solicitudes/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -293,7 +293,7 @@ const Dashboard = () => {
                   </button>
                 </div>
                 <small className="text-muted mt-2 d-block">
-                  Cupos por tipo: Vacaciones (2 personas), Ausencia (sin límite), Permiso (3 personas).
+                  Cupos por tipo: Vacaciones (2 personas), Ausencia (sin limite), Permiso (3 personas).
                 </small>
               </form>
             </div>

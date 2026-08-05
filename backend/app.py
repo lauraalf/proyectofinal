@@ -13,7 +13,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
-CORS(app, origins=["http://localhost:3000"])
+CORS(app, origins=[
+    "http://localhost:3000",
+    "https://proyectofinal-lauraalf.vercel.app"
+])
 
 SECRET_KEY = "secret"
 
@@ -21,14 +24,6 @@ supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_KEY")
 )
-
-def get_limite_por_tipo(tipo):
-    if tipo == "vacaciones":
-        return 2
-    elif tipo == "permiso":
-        return 3
-    else:
-        return 999
 
 def verify_token(func):
     @wraps(func)
@@ -207,7 +202,12 @@ def crear_solicitud():
                 "message": "La fecha de inicio no puede ser en el pasado"
             }), 400
 
-        limite = get_limite_por_tipo(tipo)
+        if tipo == "vacaciones":
+            limite = 2
+        elif tipo == "permiso":
+            limite = 3
+        else:
+            limite = 999
         
         response = (
             supabase
@@ -323,7 +323,12 @@ def actualizar_solicitud(solicitud_id):
             }), 400
 
         if nuevo_estado == "aprobada":
-            limite = get_limite_por_tipo(tipo)
+            if tipo == "vacaciones":
+                limite = 2
+            elif tipo == "permiso":
+                limite = 3
+            else:
+                limite = 999
 
             response = (
                 supabase
