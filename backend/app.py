@@ -13,11 +13,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-CORS(app, origins=[
-    "http://localhost:3000",
-    "https://proyectofinal-sooty.vercel.app",
-    "https://proyectofinal-sooty.vercel.app/"
-])
+CORS(app, origins="*")
 
 SECRET_KEY = "secret"
 
